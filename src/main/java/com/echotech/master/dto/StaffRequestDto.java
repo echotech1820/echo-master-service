@@ -9,6 +9,8 @@ public class StaffRequestDto {
     private String staffRole;
 
     private String staffActiveFlag;
+    
+    private Integer clinicSysId;
 
 	public Integer getStaffUserSysId() {
 		return staffUserSysId;
@@ -40,6 +42,14 @@ public class StaffRequestDto {
 
 	public void setStaffActiveFlag(String staffActiveFlag) {
 		this.staffActiveFlag = staffActiveFlag;
+	}
+
+	public Integer getClinicSysId() {
+		return clinicSysId;
+	}
+
+	public void setClinicSysId(Integer clinicSysId) {
+		this.clinicSysId = clinicSysId;
 	}
 
 }

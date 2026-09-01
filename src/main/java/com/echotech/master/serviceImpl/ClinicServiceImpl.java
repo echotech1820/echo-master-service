@@ -4,10 +4,15 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
+import com.echotech.master.dto.ClinicPatientFieldsConfigRequest;
 import com.echotech.master.dto.ClinicRequestDto;
 import com.echotech.master.dto.ClinicSetupResponse;
+import com.echotech.master.dto.ResponseDto;
 import com.echotech.master.exception.BadRequestException;
 import com.echotech.master.model.Clinic;
 import com.echotech.master.model.ClinicUser;
@@ -18,6 +23,7 @@ import com.echotech.master.repository.ClinicUserRepository;
 import com.echotech.master.repository.ClinicUserRolerepository;
 import com.echotech.master.repository.RoleRepository;
 import com.echotech.master.service.ClinicService;
+import com.echotech.master.util.WebServiceUtility;
 
 @Service
 public class ClinicServiceImpl implements ClinicService {
@@ -33,6 +39,9 @@ public class ClinicServiceImpl implements ClinicService {
 	
 	@Autowired
 	private ClinicUserRolerepository clnUserRoleRepo;
+
+	@Autowired
+	private WebServiceUtility webServiceUtility;
 
 	@Override
 	public ClinicSetupResponse clinicSetup(ClinicRequestDto clinicRequest) {
@@ -76,6 +85,9 @@ public class ClinicServiceImpl implements ClinicService {
 			clnUserRole.setCluleRoleSysId(role.getRoleSysId());
 			
 			clnUserRole = clnUserRoleRepo.save(clnUserRole);
+
+			// Seed default patient-form fields in EchoQueueService (ids 1-7, show + mandatory).
+			saveDefaultPatientFields(clinic.getClnSysId());
 			
 			response.setStatusCode("SUCCESS");
 			response.setStatusMessage("CLINIC SETUP SUCCESSFUL");
@@ -86,6 +98,47 @@ public class ClinicServiceImpl implements ClinicService {
 			throw new BadRequestException("THE GIVEN REQUEST IS INVALID");
 		}
 		
+	}
+
+	@Override
+	public ResponseDto getClinicName(Integer clinicId) {
+		ResponseDto response = new ResponseDto();
+		System.out.println("CLINIC ID: " + clinicId);
+		String clinicName = clinicRepo.getClinNameById(clinicId);
+		
+		if(clinicName != null) {
+			System.out.println("CLINIC NAME: " + clinicName);
+			response.setStatus("SUCCESS");
+			response.setData(clinicName);
+		}else {
+			System.out.println("ERROR");
+		}
+		
+		return response;
+	}
+
+	private void saveDefaultPatientFields(Integer clinicSysId) {
+		ClinicPatientFieldsConfigRequest request = new ClinicPatientFieldsConfigRequest();
+		request.setClinicSysId(clinicSysId);
+		request.setFields(webServiceUtility.getDefaultPatientFields());
+
+		try {
+			RestTemplate restTemplate = new RestTemplate();
+			ResponseEntity<ResponseDto> response = restTemplate.postForEntity(
+					webServiceUtility.getClinicPatientFieldsConfigUrl(),
+					request,
+					ResponseDto.class);
+
+			ResponseDto body = response.getBody();
+			if (body == null || !"SUCCESS".equalsIgnoreCase(body.getStatus())) {
+				String message = body != null && body.getMessage() != null
+						? body.getMessage()
+						: "Clinic patient fields configuration failed";
+				throw new BadRequestException(message);
+			}
+		} catch (RestClientException ex) {
+			throw new BadRequestException("Unable to configure default patient form fields for clinic");
+		}
 	}
 
 }
