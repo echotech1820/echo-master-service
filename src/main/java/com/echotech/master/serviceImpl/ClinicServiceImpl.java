@@ -87,7 +87,7 @@ public class ClinicServiceImpl implements ClinicService {
 			clnUserRole = clnUserRoleRepo.save(clnUserRole);
 
 			// Seed default patient-form fields in EchoQueueService (ids 1-7, show + mandatory).
-			saveDefaultPatientFields(clinic.getClnSysId());
+//			saveDefaultPatientFields(clinic.getClnSysId());
 			
 			response.setStatusCode("SUCCESS");
 			response.setStatusMessage("CLINIC SETUP SUCCESSFUL");
